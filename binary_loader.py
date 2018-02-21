@@ -1,5 +1,6 @@
 # Owner: Artem Vasenin (a.vasenin@ntechlab.com)
 
+import os
 import re
 import sys
 from pathlib import Path
@@ -44,6 +45,7 @@ class BinaryDataset:
 
     def __getitem__(self, x: Tuple[Path, str]) -> Image.Image:
         folder, img = x
+        img = os.path.splitext(img)[0]
         if folder not in self.cache:
             result_path = (self.base_folder / folder)
             if len(self.cache) >= self.cache_size:

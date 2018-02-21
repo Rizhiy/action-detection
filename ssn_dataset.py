@@ -2,11 +2,13 @@ import torch.utils.data as data
 
 import os
 import os.path
+from pathlib import Path
 from numpy.random import randint
 from ops.io import load_proposal_file
 from transforms import *
 from ops.utils import temporal_iou
 
+from binary_loader import BinaryDataset
 
 class SSNInstance:
 
@@ -144,7 +146,7 @@ class SSNDataSet(data.Dataset):
                  bg_iou_thresh=0.01, incomplete_iou_thresh=0.3,
                  bg_coverage_thresh=0.02, incomplete_overlap_thresh=0.7,
                  gt_as_fg=True, reg_stats=None, test_interval=6, verbose=True,
-                 exclude_empty=True, epoch_multiplier=1):
+                 exclude_empty=True, epoch_multiplier=1, loader = None):
 
         self.root_path = root_path
         self.prop_file = prop_file
@@ -184,12 +186,18 @@ class SSNDataSet(data.Dataset):
 
         self._parse_prop_file(stats=reg_stats)
 
+        self.loader = BinaryDataset(Path('.')) if loader is None else loader
+
     def _load_image(self, directory, idx):
+        directory = Path(directory.replace('frames', 'compressed_frames'))
         if self.modality == 'RGB' or self.modality == 'RGBDiff':
-            return [Image.open(os.path.join(directory, self.image_tmpl.format(idx))).convert('RGB')]
+            return [self.loader[directory, self.image_tmpl.fomrat(idx).convert('RGB')]]
+            # return [Image.open(os.path.join(directory, self.image_tmpl.format(idx))).convert('RGB')]
         elif self.modality == 'Flow':
-            x_img = Image.open(os.path.join(directory, self.image_tmpl.format('x', idx))).convert('L')
-            y_img = Image.open(os.path.join(directory, self.image_tmpl.format('y', idx))).convert('L')
+            x_img = self.loader[directory, self.image_tmpl.format('x', idx)].convert('L')
+            y_img = self.loader[directory, self.image_tmpl.format('y', idx)].convert('L')
+            # x_img = Image.open(os.path.join(directory, self.image_tmpl.format('x', idx))).convert('L')
+            # y_img = Image.open(os.path.join(directory, self.image_tmpl.format('y', idx))).convert('L')
 
             return [x_img, y_img]
 
